@@ -20,30 +20,6 @@ import json
 import logging
 from datetime import datetime
 
-# -----------------------------------------------------------------------------
-# Setup logging 
-# -----------------------------------------------------------------------------
-
-# Default logging level
-LOG_LEVEL = logging.INFO
-
-# create logger
-logger = logging.getLogger(__file__)
-logger.setLevel(LOG_LEVEL)
-
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-
-# create formatter
-formatter = logging.Formatter('%(levelname)s - %(message)s')
-
-# add formatter to ch
-ch.setFormatter(formatter)
-
-# add ch to logger
-logger.addHandler(ch)
-
 
 # -----------------------------------------------------------------------------
 # Setup default arguments 
@@ -64,16 +40,16 @@ def buildHeaderArray(ovdm_jsonFile, delimiter):
   global defaultGeoJSONHeader
 
   try:
-    logger.info("Building Header record")
+    logging.info("Building Header record")
     with open(ovdm_jsonFile, 'r') as file:
       jsonFile = json.load(file)
   except Exception as e:
-    logger.error("There was a problem reading the JSON file")
+    logging.error("There was a problem reading the JSON file")
     raise e
 
   if 'type' in jsonFile['visualizerData'][0]:
-    logger.info("JSON file contains position data")
-    logger.debug("Header:", defaultGeoJSONHeader)
+    logging.info("JSON file contains position data")
+    logging.debug("Header:", defaultGeoJSONHeader)
     return defaultGeoJSONHeader
 
   elif 'data' in jsonFile['visualizerData'][0]:
@@ -81,11 +57,11 @@ def buildHeaderArray(ovdm_jsonFile, delimiter):
     for dataset in jsonFile['visualizerData']:
       headerArray.append("{} ({})".format(dataset['label'], dataset['unit']).replace(delimiter, ""))
 
-    logger.debug("Header: {}".format(delimiter.join(headerArray)))
+    logging.debug("Header: {}".format(delimiter.join(headerArray)))
     return headerArray
 
   else:
-    logger.error("JSON file does not appear to be an OpenVDM data dashboard file.")
+    logging.error("JSON file does not appear to be an OpenVDM data dashboard file.")
 
   return False;
 
@@ -98,11 +74,11 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
   '''
 
   try:
-    logger.info("Ingesting input file")
+    logging.info("Ingesting input file")
     with open(ovdm_jsonFile, 'r') as file:
       jsonFile = json.load(file)
   except Exception as e:
-    logger.error("There was a problem ingesting the JSON file")
+    logging.error("There was a problem ingesting the JSON file")
     raise e
 
 # -----------------------------------------------------------------------------
@@ -129,11 +105,11 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
   # input file contains geo-referenced data.
   if 'type' in jsonFile['visualizerData'][0]:
     if 'coordTimes' not in jsonFile['visualizerData'][0]['features'][0]['properties']:
-      logger.error("The input file does not contain date/time date.")
+      logging.error("The input file does not contain date/time date.")
 
     elif outputFile:
       try:
-        logger.info("Writing output file")
+        logging.info("Writing output file")
         with open(outputFile, 'w') as file:
           
           if header:
@@ -143,11 +119,11 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
             file.write(delimiter.join([datetime.fromtimestamp(jsonFile['visualizerData'][0]['features'][0]['properties']['coordTimes'][idx]/ 1e3).strftime(dateFormat),str(coord[0]),str(coord[1])]) + '\n')
 
       except Exception as e:
-        logger.error("There was a problem writing to the output file")
+        logging.error("There was a problem writing to the output file")
         raise e
 
     else:
-      logger.info("Writing output to stdout")
+      logging.info("Writing output to stdout")
       if header:
         print(header)
 
@@ -159,7 +135,7 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
 
     if outputFile:
       try:
-        logger.info("Writing output file")
+        logging.info("Writing output file")
         with open(outputFile, 'w') as file:
           
           if header:
@@ -176,11 +152,11 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
             file.write(delimiter.join(dataRow) + '\n')
 
       except Exception as e:
-        logger.error("There was a problem writing to the output file")
+        logging.error("There was a problem writing to the output file")
         raise e
 
     else:
-      logger.info("Writing output to stdout")
+      logging.info("Writing output to stdout")
       if header:
         print(header)
 
@@ -196,7 +172,7 @@ def main(ovdm_jsonFile, delimiter, dateFormat, header, outputFile):
 
           print(delimiter.join(dataRow))
 
-  # logger.debug(json.dumps(jsonFile, indent=2))
+  # logging.debug(json.dumps(jsonFile, indent=2))
 
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -205,7 +181,9 @@ if __name__ == '__main__':
   import argparse
 
   parser = argparse.ArgumentParser(description='OpenVDM JSON to CSV conversion utility')
-  parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+  parser.add_argument('-v', '--verbosity', dest='verbosity',
+                      default=0, action='count',
+                      help='increase output verbosity')
   parser.add_argument('-n', '--no_header', action='store_true', help=' do not include the header in the output')
   parser.add_argument('-L', '--delimiter', default=defaultDelimiter, help='field delimiter used in the output. (default: "' + defaultDelimiter + '").')
   parser.add_argument('-F', '--dateFormat', default=defaultOutputDateFormat, help='date format used in the output. Use standard datetime strfdate syntax (default: "' + defaultOutputDateFormat.replace("%", "%%") + '").')
@@ -213,19 +191,22 @@ if __name__ == '__main__':
   parser.add_argument('-O', '--outputFile', help='optional output file (default is stdout).')
   parser.add_argument('ovdm_jsonFile', help='input OpenVDM data dashboard file.')
 
-  args = parser.parse_args()
+  parsed_args = parser.parse_args()
 
-  # Turn on debug mode
-  if args.debug:
-    logger.info("Setting log level to DEBUG")
-    logger.setLevel(logging.DEBUG)
-    for handler in logger.handlers:
-      handler.setLevel(logging.DEBUG)
-    logger.debug("Log level now set to DEBUG")
+  ############################
+  # Set up logging before we do any other argument parsing (so that we
+  # can log problems with argument parsing).
+  
+  LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+  logging.basicConfig(format=LOGGING_FORMAT)
+
+  LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+  parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+  logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
   # If the optional argument was added
-  if len(args.dateFormat.split(args.delimiter)) != len(args.dateFormat.split(args.delimiter)):
-    logger.error("The number of columns in datetime format must match number of columns in datetime header")
+  if len(parsed_args.dateFormat.split(parsed_args.delimiter)) != len(parsed_args.dateFormat.split(parsed_args.delimiter)):
+    logging.error("The number of columns in datetime format must match number of columns in datetime header")
 
     try:
       sys.exit(0)
@@ -233,8 +214,8 @@ if __name__ == '__main__':
       os._exit(0)
 
   # If the optional argument was added
-  if len(args.delimiter) == 0:
-    logger.error("The delimiter must contain at least one character")
+  if len(parsed_args.delimiter) == 0:
+    logging.error("The delimiter must contain at least one character")
 
     try:
       sys.exit(0)
@@ -243,9 +224,9 @@ if __name__ == '__main__':
 
   try:
     date = datetime.utcnow()
-    datestr = date.strftime(args.dateFormat)
+    datestr = date.strftime(parsed_args.dateFormat)
   except:
-    logger.error("The specified dateFormat is invalid.")
+    logging.error("The specified dateFormat is invalid.")
 
     try:
       sys.exit(0)
@@ -253,27 +234,27 @@ if __name__ == '__main__':
       os._exit(0)
 
   # verify the input file is valid
-  if not os.path.isfile(args.ovdm_jsonFile):
-    logger.error("The specified input file does not exist.")
+  if not os.path.isfile(parsed_args.ovdm_jsonFile):
+    logging.error("The specified input file does not exist.")
 
     try:
       sys.exit(0)
     except SystemExit:
       os._exit(0)
 
-  if args.no_header:
+  if parsed_args.no_header:
     header = False
   else:
-    header = args.dateFormatHeader.replace(defaultDelimiter, args.delimiter) + args.delimiter + args.delimiter.join(buildHeaderArray(args.ovdm_jsonFile, args.delimiter))
+    header = parsed_args.dateFormatHeader.replace(defaultDelimiter, parsed_args.delimiter) + parsed_args.delimiter + parsed_args.delimiter.join(buildHeaderArray(parsed_args.ovdm_jsonFile, parsed_args.delimiter))
 
   # Run the main loop
   try:
-    main(args.ovdm_jsonFile, args.delimiter, args.dateFormat.replace(defaultDelimiter, args.delimiter), header, args.outputFile)
+    main(parsed_args.ovdm_jsonFile, parsed_args.delimiter, parsed_args.dateFormat.replace(defaultDelimiter, parsed_args.delimiter), header, parsed_args.outputFile)
   except KeyboardInterrupt:
-    logger.info('Interrupted')
+    logging.info('Interrupted')
     try:
       sys.exit(0)
     except SystemExit:
       os._exit(0)
 
-  logger.info('Complete!')
+  logging.info('Complete!')

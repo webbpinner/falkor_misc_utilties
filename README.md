@@ -9,7 +9,7 @@ This utility will convert a geoJSON formatted file that contains coordTime (time
 
 The usage statement for geojson2csv.py:
 ```
-usage: geojson2csv.py [-h] [-d] [-n] [-L DELIMITER] [-F DATEFORMAT]
+usage: geojson2csv.py [-h] [-v] [-n] [-L DELIMITER] [-F DATEFORMAT]
                       [-H DATEFORMATHEADER] [-O OUTPUTFILE]
                       geojsonFile
 
@@ -20,7 +20,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -d, --debug           display debug messages
+  -v, --vebosity        increase output verbosity
   -n, --no_header       do not include the header in the output
   -L DELIMITER, --delimiter DELIMITER
                         field delimiter used in the output. (default: ",").
@@ -77,7 +77,7 @@ This utiliy converts the OpenVDM data dashboard files to csv.  This may be usefu
 
 The usage statement for ovdmjson2csv.py:
 ```
-usage: ovdmjson2csv.py [-h] [-d] [-n] [-L DELIMITER] [-F DATEFORMAT]
+usage: ovdmjson2csv.py [-h] [-v] [-n] [-L DELIMITER] [-F DATEFORMAT]
                       [-H DATEFORMATHEADER] [-O OUTPUTFILE]
                       geojsonFile
 
@@ -88,7 +88,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -d, --debug           display debug messages
+  -v, --vebosity        increase output verbosity
   -n, --no_header       do not include the header in the output
   -L DELIMITER, --delimiter DELIMITER
                         field delimiter used in the output. (default: ",").
@@ -102,3 +102,19 @@ optional arguments:
                         optional output file (default is stdout).
 ```
 
+## Processing the sample data
+
+Go to the falkor_misc_utilities directory:
+```
+cd ~/falkor_misc_utilities
+```
+
+Process the geojson file with the command:
+```
+python ./scripts/geojson2csv.py ./sample_data/SAMPLE_GGA_GEOJSON.json
+```
+
+Process the ovdm_json file with the command:
+```
+python ./scripts/ovdmjson2csv.py ./sample_data/SAMPLE_GGA_OVDM.json
+```
