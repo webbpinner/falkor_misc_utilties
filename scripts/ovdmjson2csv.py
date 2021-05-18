@@ -28,7 +28,7 @@ from datetime import datetime
 defaultDelimiter = ","
 defaultOutputDateFormat = "%Y,%m,%d,%H,%M,%S.%f"
 defaultOutputDateHeader = "Year,Month,Day,Hour,Minute,Second"
-defaultGeoJSONHeader = ['Latitude (ddeg)', 'Longitude (ddeg)']
+defaultGeoJSONHeader = ['Longitude (ddeg)', 'Latitude (ddeg)']
 
 
 # -----------------------------------------------------------------------------
